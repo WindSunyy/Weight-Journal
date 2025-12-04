@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Weight Journal",
+    "slug": "weight-journal",
+    "scheme": "weightjournal",
+    "version": "0.1.0",
+    "sdkVersion": "52.0.0",
+    "entryPoint": "./index.js",
+    "platforms": [
+      "ios"
+    ],
+    "orientation": "portrait",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wind.weightjournal"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-asset"
+    ]
+  }
+}
