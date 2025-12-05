@@ -144,6 +144,8 @@ export default function MainScreen({ active, onSwitch, token, refreshKey }: { ac
       <ProgressSwitchCard
         active={active}
         onSwitch={onSwitch}
+        onTouchIn={() => setScrollEnabled(false)}
+        onTouchOut={() => setScrollEnabled(true)}
         weight={{
           startWeight: (() => {
             // 取最早一条真实体重记录

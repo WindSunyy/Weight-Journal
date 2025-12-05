@@ -269,6 +269,41 @@ export default function WeeklyChart({ weeks = [], title = '本周体重', baseMo
               paddingHorizontal: 8
             }}
           >
+            {/* 固定高度的表情行，位于周日期范围下方 */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 5,
+                left: 8,
+                right: 8,
+                height: 20,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              {continuousData.map((v, i) => {
+                // 前一日：同周则取前一个索引；若是周一则取上一周的周日
+                const prev = i > 0 ? continuousData[i - 1] : (prevWeekData?.[6] ?? 0);
+                let emoji = '🙂';
+                let emojiColor: string | undefined = undefined;
+                if (v <= 0) {
+                  emoji = '🙂';
+                  emojiColor = '#9ca3af';
+                } else if (prev <= 0) {
+                  emoji = '🙂';
+                } else if (v < prev) {
+                  emoji = '😄';
+                } else if (v > prev) {
+                  emoji = '😢';
+                } else {
+                  emoji = '🙂';
+                }
+                return (
+                  <Text key={`emoji-${i}`} style={{ fontSize: 14, color: emojiColor }}> {emoji} </Text>
+                );
+              })}
+            </View>
             <View style={{ position: 'absolute', left: 8, right: 8, top: 120, borderTopWidth: 1, borderTopColor: '#e5e7eb', borderStyle: 'dashed' }} />
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               {continuousData.map((v, i) => {
@@ -281,6 +316,32 @@ export default function WeeklyChart({ weeks = [], title = '本周体重', baseMo
                 
                 const color = v > 0 ? 'rgb(53,53,53)' : '#f3f4f6';
                 const textColor = '#4b5563'; // 当前周文字为深色
+
+                // 表情逻辑：位于柱形上方
+                const prev = i > 0 ? continuousData[i - 1] : 0;
+                let emoji = '🙂';
+                let emojiColor: string | undefined = undefined;
+                if (v <= 0) {
+                  // 当日无记录：黑白色平静表情
+                  emoji = '🙂';
+                  emojiColor = '#9ca3af';
+                } else if (prev <= 0) {
+                  // 前一天没有记录：有颜色平静表情
+                  emoji = '🙂';
+                  emojiColor = undefined; // 使用系统彩色
+                } else if (v < prev) {
+                  // 比前一天低：开心表情
+                  emoji = '😄';
+                  emojiColor = undefined;
+                } else if (v > prev) {
+                  // 比前一天高：哭的表情
+                  emoji = '😢';
+                  emojiColor = undefined;
+                } else {
+                  // 相等：有颜色平静表情
+                  emoji = '🙂';
+                  emojiColor = undefined;
+                }
                 
                 return (
                   <View key={i} style={{ width: 24, alignItems: 'center', opacity: 1 }}>

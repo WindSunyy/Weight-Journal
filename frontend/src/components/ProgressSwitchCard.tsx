@@ -11,20 +11,35 @@ export default function ProgressSwitchCard({
   active,
   onSwitch = () => {},
   weight,
-  diet
+  diet,
+  onTouchIn,
+  onTouchOut
 }: {
   active: TabKey;
   onSwitch: (t: TabKey) => void;
   weight: WeightProps;
   diet: DietProps;
+  onTouchIn?: () => void;
+  onTouchOut?: () => void;
 }) {
   const anim = useRef(new Animated.Value(active === 'diet' ? 1 : 0)).current;
   const responder = useRef(
     PanResponder.create({
+      // 提高捕获优先级，避免饮食卡片内部子视图拦截
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 12,
+      onPanResponderGrant: () => {
+        onTouchIn && onTouchIn();
+      },
       onPanResponderRelease: (_e, g) => {
-        if (g.dx < -40 && active !== 'diet') onSwitch('diet');
-        else if (g.dx > 40 && active !== 'weight') onSwitch('weight');
+        // 右划进入饮食栏，左划进入体重栏
+        if (g.dx > 40 && active !== 'diet') onSwitch('diet');
+        else if (g.dx < -40 && active !== 'weight') onSwitch('weight');
+        onTouchOut && onTouchOut();
+      },
+      onPanResponderTerminate: () => {
+        onTouchOut && onTouchOut();
       }
     })
   ).current;
@@ -50,10 +65,26 @@ export default function ProgressSwitchCard({
   const radius = (size - strokeWidth) / 2;
 
   const { progress, remaining, percent } = useMemo(() => {
-    const total = Math.max(Math.abs(weight.startWeight - weight.goalWeight), 0.0001);
-    const done = Math.max(Math.abs(weight.startWeight - weight.currentWeight), 0);
-    const p = Math.min(done / total, 1);
-    const rem = Math.max(Math.abs(weight.currentWeight - weight.goalWeight), 0);
+    const start = Number(weight.startWeight) || 0;
+    const goal = Number(weight.goalWeight) || 0;
+    const curr = Number(weight.currentWeight) || 0;
+    const total = Math.max(Math.abs(start - goal), 0.0001);
+    const rem = Math.max(Math.abs(curr - goal), 0);
+
+    let p = 0;
+    if (start > goal) {
+      // 减重：向下靠近目标
+      if (curr <= goal) p = 1; // 达到或低于目标
+      else p = Math.max(0, Math.min((start - curr) / (start - goal), 1));
+    } else if (start < goal) {
+      // 增重：向上靠近目标
+      if (curr >= goal) p = 1; // 达到或高于目标
+      else p = Math.max(0, Math.min((curr - start) / (goal - start), 1));
+    } else {
+      // start == goal：以距离目标为准
+      p = curr === goal ? 1 : 0;
+    }
+
     return { progress: p, remaining: rem, percent: Math.round(p * 100) };
   }, [weight]);
 
