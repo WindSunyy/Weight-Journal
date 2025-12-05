@@ -82,5 +82,52 @@ module.exports = (db) => {
     });
   });
 
+  // 获取用户目标体重（从 users 表）
+  router.get("/target", (req, res) => {
+    getUserIdByTokenFromReq(req, (userId) => {
+      if (!userId)
+        return res.status(401).json({ success: false, message: "无效token" });
+      db.query(
+        "SELECT target_weight FROM users WHERE id = ?",
+        [userId],
+        (err, rows) => {
+          if (err)
+            return res
+              .status(500)
+              .json({ success: false, message: "数据库错误" });
+          const target = rows && rows[0] ? rows[0].target_weight : null;
+          res.json({ success: true, data: { targetWeight: target } });
+        }
+      );
+    });
+  });
+
+  // 设置用户目标体重（写入 users 表）
+  router.post("/target", (req, res) => {
+    const { targetWeight } = req.body || {};
+    if (typeof targetWeight !== "number") {
+      return res.status(400).json({ success: false, message: "缺少目标体重" });
+    }
+    getUserIdByTokenFromReq(req, (userId) => {
+      if (!userId)
+        return res.status(401).json({ success: false, message: "无效token" });
+      db.query(
+        "UPDATE users SET target_weight = ? WHERE id = ?",
+        [targetWeight, userId],
+        (err, result) => {
+          if (err)
+            return res
+              .status(500)
+              .json({ success: false, message: "数据库错误" });
+          if (result.affectedRows > 0) {
+            res.json({ success: true, message: "目标体重已保存" });
+          } else {
+            res.status(400).json({ success: false, message: "保存失败" });
+          }
+        }
+      );
+    });
+  });
+
   return router;
 };

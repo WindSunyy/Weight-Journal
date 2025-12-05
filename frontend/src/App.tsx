@@ -17,7 +17,7 @@ import LoginScreen from './screens/LoginScreen';
 export type TabKey = 'diet' | 'weight';
 type PageKey = 'record' | 'settings';
 
-type AppPageKey = PageKey | 'targetWeight';
+type AppPageKey = PageKey | 'targetWeight' | 'profileEdit';
 
 export default function App() {
   const [tab, setTab] = useState<TabKey>('weight');
@@ -77,7 +77,23 @@ export default function App() {
                 )}
               </>
             )}
-            {page === 'settings' && <SettingsScreen token={token} onLogout={handleLogout} onGotoTargetWeight={() => setPage('targetWeight')} />}
+            {page === 'settings' && (
+              <SettingsScreen
+                token={token}
+                onLogout={handleLogout}
+                onGotoTargetWeight={() => setPage('targetWeight')}
+                onGotoProfileEdit={() => setPage('profileEdit')}
+              />
+            )}
+            {page === 'profileEdit' && (
+              // 轻量导航：使用 goBack 返回设置页
+              // 为避免引入额外导航库，这里用本地状态切换
+              // eslint-disable-next-line @typescript-eslint/no-var-requires
+              (() => {
+                const ProfileEditScreen = require('./screens/ProfileEditScreen').default;
+                return <ProfileEditScreen navigation={{ goBack: () => setPage('settings') }} />;
+              })()
+            )}
             {page === 'targetWeight' && <TargetWeightScreen navigation={{ goBack: () => setPage('settings') }} />}
             <BottomNav
               onPressLeft={() => { setPage('record'); setRecordKey(null); }}

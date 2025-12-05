@@ -1,5 +1,15 @@
 import request from "../utils/request";
 
+export async function getTargetWeight() {
+  return request.get("/api/weight/target");
+}
+
+export async function setTargetWeight(targetWeight: number) {
+  return request.post("/api/weight/target", { targetWeight });
+}
+
+// keep single import
+
 // 新增或更新体重记录
 export function saveWeight({
   weight,

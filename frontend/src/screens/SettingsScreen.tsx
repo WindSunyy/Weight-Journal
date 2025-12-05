@@ -7,9 +7,17 @@ interface SettingsScreenProps {
   token: string;
   onLogout: () => void;
   onGotoTargetWeight?: () => void;
+  onGotoProfileEdit?: () => void;
 }
 
-export default function SettingsScreen({ token, onLogout, onGotoTargetWeight }: SettingsScreenProps) {
+export default function SettingsScreen({ token, onLogout, onGotoTargetWeight, onGotoProfileEdit }: SettingsScreenProps) {
+  const goProfileEdit = () => {
+    if (onGotoProfileEdit) {
+      onGotoProfileEdit();
+    } else {
+      Alert.alert('提示', '请在App导航中配置个人资料页面');
+    }
+  };
   const handleLogout = async () => {
     try {
       const res = await logout(token);
@@ -31,6 +39,12 @@ export default function SettingsScreen({ token, onLogout, onGotoTargetWeight }: 
           <Text style={styles.title}>设置</Text>
           <Text style={styles.desc}>这里可以配置提醒、单位、目标等。</Text>
           <TouchableOpacity
+            style={{ marginTop: 12, backgroundColor: '#F3F4F6', borderRadius: 10, padding: 14, alignItems: 'center' }}
+            onPress={goProfileEdit}
+          >
+            <Text style={{ color: '#111827', fontWeight: 'bold', fontSize: 16 }}>个人资料设置</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={{ marginTop: 18, backgroundColor: '#F3F4F6', borderRadius: 10, padding: 14, alignItems: 'center' }}
             onPress={() => {
               if (onGotoTargetWeight) {
@@ -40,7 +54,7 @@ export default function SettingsScreen({ token, onLogout, onGotoTargetWeight }: 
               }
             }}
           >
-            <Text style={{ color: '#10B981', fontWeight: 'bold', fontSize: 16 }}>目标体重设置</Text>
+            <Text style={{ color: '#111827', fontWeight: 'bold', fontSize: 16 }}>目标体重设置</Text>
           </TouchableOpacity>
         </Card.Content>
       </Card>

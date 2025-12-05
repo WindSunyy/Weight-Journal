@@ -1,11 +1,10 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, PanResponder, Pressable, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, PanResponder, Pressable, ScrollView, Animated, Alert } from 'react-native';
+import { getUserProfile } from '../storage';
+import { getProfile } from '../api/user';
+import { setTargetWeight, getTargetWeight } from '../api/weight';
 
-const USER = {
-  birthYear: 2001,
-  height: 185,
-  gender: 'male',
-};
+// 高度从个人资料中联动
 
 const MIN_WEIGHT = 10;
 const MAX_WEIGHT = 300;
@@ -37,10 +36,53 @@ const COLOR_MAP = {
 };
 
 export default function TargetWeightScreen({ navigation }: { navigation: any }) {
+  const [heightCm, setHeightCm] = React.useState<number>(170);
     const [limitTip, setLimitTip] = React.useState('');
   const weight = useRef(new Animated.Value(75)).current;
   const [weightValue, setWeightValue] = React.useState(75);
   const scrollRef = useRef<ScrollView>(null);
+
+  // 加载个人资料中的身高，优先后端，失败回本地
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getProfile();
+        if (res.data && res.data.success) {
+          const server = res.data.data || {};
+          if (server && server.heightCm) setHeightCm(Number(server.heightCm));
+          else {
+            const local = await getUserProfile();
+            if (local && local.heightCm) setHeightCm(Number(local.heightCm));
+          }
+        } else {
+          const local = await getUserProfile();
+          if (local && local.heightCm) setHeightCm(Number(local.heightCm));
+        }
+      } catch {
+        const local = await getUserProfile();
+        if (local && local.heightCm) setHeightCm(Number(local.heightCm));
+      }
+    })();
+  }, []);
+
+  // 加载后端已保存的目标体重并应用到刻度
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getTargetWeight();
+        if (res.data && res.data.success) {
+          const raw = res.data.data?.targetWeight;
+          const twNum = raw != null ? Number(raw) : NaN;
+          if (!isNaN(twNum) && twNum > MIN_WEIGHT && twNum < MAX_WEIGHT) {
+            setWeightValue(twNum);
+            Animated.spring(weight, { toValue: twNum, useNativeDriver: false, speed: 24, bounciness: 1 }).start();
+          }
+        }
+      } catch {
+        // 忽略错误，使用默认值
+      }
+    })();
+  }, [weight]);
 
   // weight 动画值监听
   useEffect(() => {
@@ -109,11 +151,11 @@ export default function TargetWeightScreen({ navigation }: { navigation: any }) 
   });
 
   // 计算 BMI 区间
-  const bmi = getBMI(weightValue, USER.height);
+  const bmi = getBMI(weightValue, heightCm);
   const bmiCategory = getBMICategory(bmi);
   // 理想体重范围
-  const idealMin = Math.round(BMI_NORMAL_MIN * (USER.height / 100) ** 2 * 10) / 10;
-  const idealMax = Math.round(BMI_NORMAL_MAX * (USER.height / 100) ** 2 * 10) / 10;
+  const idealMin = Math.round(BMI_NORMAL_MIN * (heightCm / 100) ** 2 * 10) / 10;
+  const idealMax = Math.round(BMI_NORMAL_MAX * (heightCm / 100) ** 2 * 10) / 10;
   // visibleWeights 已用 useMemo 缓存，无需重复声明
 
   return (
@@ -131,7 +173,7 @@ export default function TargetWeightScreen({ navigation }: { navigation: any }) 
           >
             <View style={[styles.scaleBar, { paddingLeft: leftPadding, paddingRight: rightPadding }]}> 
               {visibleWeights.map((w, i) => {
-                const bmi = getBMI(w, USER.height);
+                const bmi = getBMI(w, heightCm);
                 const cat = getBMICategory(bmi);
                 const isMajor = w % 5 === 0;
                 return (
@@ -165,7 +207,20 @@ export default function TargetWeightScreen({ navigation }: { navigation: any }) 
         <Text style={styles.infoValue}>半年多</Text>
         <Text style={styles.infoDesc}>目标预计达成时间，是根据您和其他同体型用户的体重变化速率综合计算得出。</Text>
       </View>
-      <Pressable style={styles.btn} onPress={() => navigation.goBack()}>
+      <Pressable
+        style={styles.btn}
+        onPress={async () => {
+          try {
+            const res = await setTargetWeight(weightValue);
+            // if (res.data && res.data.success) {
+            //   Alert.alert('提示', '目标体重已保存');
+            // }
+          } catch (e) {
+            // 错误弹窗在 request 拦截器里已处理
+          }
+          navigation.goBack();
+        }}
+      >
         <Text style={styles.btnText}>完成</Text>
       </Pressable>
     </View>

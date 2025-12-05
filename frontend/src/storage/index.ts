@@ -19,6 +19,7 @@ const KEYS = {
   weights: "wj:weights",
   foods: "wj:foods",
   meals: "wj:meals",
+  profile: "wj:profile",
 };
 
 export async function getWeights(): Promise<WeightEntry[]> {
@@ -43,4 +44,21 @@ export async function getMeals(): Promise<MealEntry[]> {
 }
 export async function saveMeals(list: MealEntry[]) {
   await AsyncStorage.setItem(KEYS.meals, JSON.stringify(list));
+}
+
+export type UserProfile = {
+  avatarUri?: string;
+  nickname?: string;
+  gender?: "男" | "女" | "其他";
+  birthYear?: number;
+  heightCm?: number;
+};
+
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const raw = await AsyncStorage.getItem(KEYS.profile);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export async function saveUserProfile(profile: UserProfile) {
+  await AsyncStorage.setItem(KEYS.profile, JSON.stringify(profile));
 }
