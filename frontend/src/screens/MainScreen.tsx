@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useEffect } from 'react';
-import { getWeightList } from '../api/weight';
+import { getWeightList, getTargetWeight } from '../api/weight';
 import { ScrollView } from 'react-native';
 import WeeklyChart from '../components/WeeklyChart';
 import ProgressSwitchCard from '../components/ProgressSwitchCard';
@@ -12,6 +12,7 @@ export default function MainScreen({ active, onSwitch, token, refreshKey }: { ac
   // 真数据 state
   const [weeks, setWeeks] = useState<any[][]>([]);
   const [baseMonday, setBaseMonday] = useState<Date | null>(null);
+  const [goalWeight, setGoalWeight] = useState<number>(68);
 
   useEffect(() => {
     getWeightList().then(res => {
@@ -124,6 +125,20 @@ export default function MainScreen({ active, onSwitch, token, refreshKey }: { ac
     });
   }, [token, refreshKey]);
 
+  // 加载目标体重（真实值）
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getTargetWeight();
+        const raw = res.data?.data?.targetWeight;
+        const gw = raw != null ? Number(raw) : NaN;
+        if (!isNaN(gw)) setGoalWeight(gw);
+      } catch {
+        // 保持默认值
+      }
+    })();
+  }, [token, refreshKey]);
+
   return (
     <ScrollView ref={scrollRef} scrollEnabled={scrollEnabled}>
       <ProgressSwitchCard
@@ -148,34 +163,26 @@ export default function MainScreen({ active, onSwitch, token, refreshKey }: { ac
             return minWeight ?? 75;
           })(),
           currentWeight: (() => {
-            // 取今日体重，没有则为0.00
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const y = today.getFullYear();
-            const m = String(today.getMonth() + 1).padStart(2, '0');
-            const d = String(today.getDate()).padStart(2, '0');
-            const todayKey = `${y}-${m}-${d}`;
-            let todayWeight = 0;
+            // 取最近一次非零体重记录；若没有则为0.00
+            let latest: number = 0;
             if (weeks && weeks.length > 0) {
-              // 最新一周在索引0
-              for (let v of weeks[0]) {
-                if (typeof v.value === 'number' && v.value > 0 && v.day) {
-                  // day: '周一'...'周日'，需判断是否为今天
-                  const dayMap = { '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5, '周六': 6, '周日': 0 };
-                  const weekDay = today.getDay();
-                  if (dayMap[v.day] === weekDay) {
-                    todayWeight = v.value;
-                    break;
+              // 从最新周开始向前搜索
+              for (let i = 0; i < weeks.length; i++) {
+                const week = weeks[i];
+                for (let j = week.length - 1; j >= 0; j--) {
+                  const v = week[j];
+                  if (typeof v.value === 'number' && v.value > 0) {
+                    latest = v.value;
+                    return latest;
                   }
                 }
               }
             }
-            return todayWeight;
+            return latest;
           })(),
-          goalWeight: 68
+          goalWeight
         }}
         diet={{ caloriesLeft: 1472, caloriesBudget: 1868 }}
-        showRecordTip={true}
       />
       <WeeklyChart
         weeks={weeks}
