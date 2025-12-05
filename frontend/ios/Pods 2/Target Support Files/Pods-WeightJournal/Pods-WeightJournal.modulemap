@@ -1,0 +1,6 @@
+module Pods_WeightJournal {
+  umbrella header "Pods-WeightJournal-umbrella.h"
+
+  export *
+  module * { export * }
+}
