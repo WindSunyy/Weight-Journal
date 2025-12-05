@@ -129,8 +129,53 @@ export default function MainScreen({ active, onSwitch, token, refreshKey }: { ac
       <ProgressSwitchCard
         active={active}
         onSwitch={onSwitch}
-        weight={{ startWeight: 75, currentWeight: 70.2, goalWeight: 68 }}
+        weight={{
+          startWeight: (() => {
+            // 取最早一条真实体重记录
+            let minWeight = null;
+            if (weeks && weeks.length > 0) {
+              for (let i = weeks.length - 1; i >= 0; i--) {
+                for (let j = 0; j < weeks[i].length; j++) {
+                  const v = weeks[i][j];
+                  if (typeof v.value === 'number' && v.value > 0) {
+                    minWeight = v.value;
+                    break;
+                  }
+                }
+                if (minWeight !== null) break;
+              }
+            }
+            return minWeight ?? 75;
+          })(),
+          currentWeight: (() => {
+            // 取今日体重，没有则为0.00
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            const todayKey = `${y}-${m}-${d}`;
+            let todayWeight = 0;
+            if (weeks && weeks.length > 0) {
+              // 最新一周在索引0
+              for (let v of weeks[0]) {
+                if (typeof v.value === 'number' && v.value > 0 && v.day) {
+                  // day: '周一'...'周日'，需判断是否为今天
+                  const dayMap = { '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5, '周六': 6, '周日': 0 };
+                  const weekDay = today.getDay();
+                  if (dayMap[v.day] === weekDay) {
+                    todayWeight = v.value;
+                    break;
+                  }
+                }
+              }
+            }
+            return todayWeight;
+          })(),
+          goalWeight: 68
+        }}
         diet={{ caloriesLeft: 1472, caloriesBudget: 1868 }}
+        showRecordTip={true}
       />
       <WeeklyChart
         weeks={weeks}

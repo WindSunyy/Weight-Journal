@@ -6,9 +6,10 @@ import { logout } from '../api/user';
 interface SettingsScreenProps {
   token: string;
   onLogout: () => void;
+  onGotoTargetWeight?: () => void;
 }
 
-export default function SettingsScreen({ token, onLogout }: SettingsScreenProps) {
+export default function SettingsScreen({ token, onLogout, onGotoTargetWeight }: SettingsScreenProps) {
   const handleLogout = async () => {
     try {
       const res = await logout(token);
@@ -28,8 +29,19 @@ export default function SettingsScreen({ token, onLogout }: SettingsScreenProps)
       <Card style={styles.card}>
         <Card.Content>
           <Text style={styles.title}>设置</Text>
-          <Text style={styles.desc}>这里可以配置提醒、单位、目标等。
-          </Text>
+          <Text style={styles.desc}>这里可以配置提醒、单位、目标等。</Text>
+          <TouchableOpacity
+            style={{ marginTop: 18, backgroundColor: '#F3F4F6', borderRadius: 10, padding: 14, alignItems: 'center' }}
+            onPress={() => {
+              if (onGotoTargetWeight) {
+                onGotoTargetWeight();
+              } else {
+                Alert.alert('提示', '请在App导航中配置TargetWeight页面');
+              }
+            }}
+          >
+            <Text style={{ color: '#10B981', fontWeight: 'bold', fontSize: 16 }}>目标体重设置</Text>
+          </TouchableOpacity>
         </Card.Content>
       </Card>
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>

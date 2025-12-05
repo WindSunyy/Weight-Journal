@@ -8,6 +8,7 @@ import HeaderTabs from './components/HeaderTabs';
 import MainScreen from './screens/MainScreen';
 import BottomNav from './components/BottomNav';
 import SettingsScreen from './screens/SettingsScreen';
+import TargetWeightScreen from './screens/TargetWeightScreen';
 import PlusSheet from './components/PlusSheet';
 import RecordScreen from './screens/RecordScreen';
 import { BlurView } from 'expo-blur';
@@ -16,9 +17,11 @@ import LoginScreen from './screens/LoginScreen';
 export type TabKey = 'diet' | 'weight';
 type PageKey = 'record' | 'settings';
 
+type AppPageKey = PageKey | 'targetWeight';
+
 export default function App() {
   const [tab, setTab] = useState<TabKey>('weight');
-  const [page, setPage] = useState<PageKey>('record');
+  const [page, setPage] = useState<AppPageKey>('record');
   const [plusOpen, setPlusOpen] = useState(false);
   const [recordKey, setRecordKey] = useState<string | null>(null);
   const [showRecordDrawer, setShowRecordDrawer] = useState(false);
@@ -74,7 +77,8 @@ export default function App() {
                 )}
               </>
             )}
-            {page === 'settings' && <SettingsScreen token={token} onLogout={handleLogout} />}
+            {page === 'settings' && <SettingsScreen token={token} onLogout={handleLogout} onGotoTargetWeight={() => setPage('targetWeight')} />}
+            {page === 'targetWeight' && <TargetWeightScreen navigation={{ goBack: () => setPage('settings') }} />}
             <BottomNav
               onPressLeft={() => { setPage('record'); setRecordKey(null); }}
               onPressRight={() => setPage('settings')}
